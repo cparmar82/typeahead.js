@@ -35,6 +35,7 @@ var Dataset = (function() {
     this.local = o.local;
     this.prefetch = o.prefetch;
     this.remote = o.remote;
+    this.defaults = o.defaults || [];
 
     this.itemHash = {};
     this.adjacencyList = {};
@@ -250,6 +251,19 @@ var Dataset = (function() {
 
     getSuggestions: function(query, cb) {
       var that = this, terms, suggestions, cacheHit = false;
+
+      if(query.length == 0 && this.defaults) {
+        var retVal = utils.map(this.defaults, function(val, idx){
+          return {
+            datum: {
+              value: val
+            },
+            value: val
+          }
+        });
+        cb && cb(retVal);
+        return;
+      }
 
       // don't do anything until the minLength constraint is met
       if (query.length < this.minLength) {

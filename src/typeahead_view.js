@@ -84,7 +84,7 @@ var TypeaheadView = (function() {
     .on('opened closed', this._propagateEvent);
 
     this.inputView = new InputView({ input: $input, hint: $hint })
-    .on('focused', this._openDropdown)
+    .on('focused', this._onFocus)
     .on('blured', this._closeDropdown)
     .on('blured', this._setInputValueToQuery)
     .on('enterKeyed', this._handleSelection)
@@ -159,7 +159,8 @@ var TypeaheadView = (function() {
         beginsWithQuery = new RegExp('^(?:' + escapedQuery + ')(.*$)', 'i');
         match = beginsWithQuery.exec(hint);
 
-        this.inputView.setHintValue(inputValue + (match ? match[1] : ''));
+        if(inputValue.length > 0)
+          this.inputView.setHintValue(inputValue + (match ? match[1] : ''));
       }
     },
 
@@ -179,6 +180,11 @@ var TypeaheadView = (function() {
       var suggestion = e.data;
 
       this.inputView.setInputValue(suggestion.value, true);
+    },
+    
+    _onFocus: function() {
+        this._getSuggestions();
+        this._openDropdown();
     },
 
     _openDropdown: function() {
@@ -223,8 +229,6 @@ var TypeaheadView = (function() {
 
     _getSuggestions: function() {
       var that = this, query = this.inputView.getQuery();
-
-      if (utils.isBlankString(query)) { return; }
 
       utils.each(this.datasets, function(i, dataset) {
         dataset.getSuggestions(query, function(suggestions) {

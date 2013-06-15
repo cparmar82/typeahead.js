@@ -389,6 +389,7 @@
             this.local = o.local;
             this.prefetch = o.prefetch;
             this.remote = o.remote;
+            this.defaults = o.defaults || [];
             this.itemHash = {};
             this.adjacencyList = {};
             this.storage = o.name ? new PersistentStorage(o.name) : null;
@@ -519,6 +520,18 @@
             },
             getSuggestions: function(query, cb) {
                 var that = this, terms, suggestions, cacheHit = false;
+                if (query.length == 0 && this.defaults) {
+                    var retVal = utils.map(this.defaults, function(val, idx) {
+                        return {
+                            datum: {
+                                value: val
+                            },
+                            value: val
+                        };
+                    });
+                    cb && cb(retVal);
+                    return;
+                }
                 if (query.length < this.minLength) {
                     return;
                 }
@@ -901,7 +914,7 @@
             this.inputView = new InputView({
                 input: $input,
                 hint: $hint
-            }).on("focused", this._openDropdown).on("blured", this._closeDropdown).on("blured", this._setInputValueToQuery).on("enterKeyed", this._handleSelection).on("queryChanged", this._clearHint).on("queryChanged", this._clearSuggestions).on("queryChanged", this._getSuggestions).on("whitespaceChanged", this._updateHint).on("queryChanged whitespaceChanged", this._openDropdown).on("queryChanged whitespaceChanged", this._setLanguageDirection).on("escKeyed", this._closeDropdown).on("escKeyed", this._setInputValueToQuery).on("tabKeyed upKeyed downKeyed", this._managePreventDefault).on("upKeyed downKeyed", this._moveDropdownCursor).on("upKeyed downKeyed", this._openDropdown).on("tabKeyed leftKeyed rightKeyed", this._autocomplete);
+            }).on("focused", this._onFocus).on("blured", this._closeDropdown).on("blured", this._setInputValueToQuery).on("enterKeyed", this._handleSelection).on("queryChanged", this._clearHint).on("queryChanged", this._clearSuggestions).on("queryChanged", this._getSuggestions).on("whitespaceChanged", this._updateHint).on("queryChanged whitespaceChanged", this._openDropdown).on("queryChanged whitespaceChanged", this._setLanguageDirection).on("escKeyed", this._closeDropdown).on("escKeyed", this._setInputValueToQuery).on("tabKeyed upKeyed downKeyed", this._managePreventDefault).on("upKeyed downKeyed", this._moveDropdownCursor).on("upKeyed downKeyed", this._openDropdown).on("tabKeyed leftKeyed rightKeyed", this._autocomplete);
         }
         utils.mixin(TypeaheadView.prototype, EventTarget, {
             _managePreventDefault: function(e) {
@@ -936,7 +949,7 @@
                     escapedQuery = utils.escapeRegExChars(query);
                     beginsWithQuery = new RegExp("^(?:" + escapedQuery + ")(.*$)", "i");
                     match = beginsWithQuery.exec(hint);
-                    this.inputView.setHintValue(inputValue + (match ? match[1] : ""));
+                    if (inputValue.length > 0) this.inputView.setHintValue(inputValue + (match ? match[1] : ""));
                 }
             },
             _clearHint: function() {
@@ -951,6 +964,10 @@
             _setInputValueToSuggestionUnderCursor: function(e) {
                 var suggestion = e.data;
                 this.inputView.setInputValue(suggestion.value, true);
+            },
+            _onFocus: function() {
+                this._getSuggestions();
+                this._openDropdown();
             },
             _openDropdown: function() {
                 this.dropdownView.open();
@@ -975,9 +992,6 @@
             },
             _getSuggestions: function() {
                 var that = this, query = this.inputView.getQuery();
-                if (utils.isBlankString(query)) {
-                    return;
-                }
                 utils.each(this.datasets, function(i, dataset) {
                     dataset.getSuggestions(query, function(suggestions) {
                         if (query === that.inputView.getQuery()) {
