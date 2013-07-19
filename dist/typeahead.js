@@ -385,6 +385,7 @@
             this.header = o.header;
             this.footer = o.footer;
             this.valueKey = o.valueKey || "value";
+            this.idKey = o.idKey || false;
             this.template = compileTemplate(o.template, o.engine, this.valueKey);
             this.local = o.local;
             this.prefetch = o.prefetch;
@@ -433,7 +434,8 @@
                 }
             },
             _transformDatum: function(datum) {
-                var value = utils.isString(datum) ? datum : datum[this.valueKey], tokens = datum.tokens || utils.tokenizeText(value), item = {
+                var value = utils.isString(datum) ? datum : datum[this.valueKey], tokens = datum.tokens || utils.tokenizeText(value), id = this.idKey ? datum[this.idKey] : value, item = {
+                    id: id,
                     value: value,
                     tokens: tokens
                 };
@@ -454,7 +456,7 @@
             _processData: function(data) {
                 var that = this, itemHash = {}, adjacencyList = {};
                 utils.each(data, function(i, datum) {
-                    var item = that._transformDatum(datum), id = utils.getUniqueId(item.value);
+                    var item = that._transformDatum(datum), id = utils.getUniqueId(item.id);
                     itemHash[id] = item;
                     utils.each(item.tokens, function(i, token) {
                         var character = token.charAt(0), adjacency = adjacencyList[character] || (adjacencyList[character] = [ id ]);
@@ -546,7 +548,7 @@
                     utils.each(data, function(i, datum) {
                         var item = that._transformDatum(datum), isDuplicate;
                         isDuplicate = utils.some(suggestions, function(suggestion) {
-                            return item.value === suggestion.value;
+                            return item.id === suggestion.id;
                         });
                         !isDuplicate && suggestions.push(item);
                         return suggestions.length < that.limit;

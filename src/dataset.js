@@ -29,6 +29,7 @@ var Dataset = (function() {
     this.header = o.header;
     this.footer = o.footer;
     this.valueKey = o.valueKey || 'value';
+    this.idKey = o.idKey || false;
     this.template = compileTemplate(o.template, o.engine, this.valueKey);
 
     // used then deleted in #initialize
@@ -115,7 +116,8 @@ var Dataset = (function() {
     _transformDatum: function(datum) {
       var value = utils.isString(datum) ? datum : datum[this.valueKey],
           tokens = datum.tokens || utils.tokenizeText(value),
-          item = { value: value, tokens: tokens };
+          id = this.idKey ? datum[this.idKey] : value,
+          item = { id: id, value: value, tokens: tokens };
 
       if (utils.isString(datum)) {
         item.datum = {};
@@ -144,7 +146,7 @@ var Dataset = (function() {
 
       utils.each(data, function(i, datum) {
         var item = that._transformDatum(datum),
-            id = utils.getUniqueId(item.value);
+            id = utils.getUniqueId(item.id);
 
         itemHash[id] = item;
 
@@ -292,9 +294,9 @@ var Dataset = (function() {
 
           // checks for duplicates
           isDuplicate = utils.some(suggestions, function(suggestion) {
-            return item.value === suggestion.value;
+            return item.id === suggestion.id;
           });
-
+          
           !isDuplicate && suggestions.push(item);
 
           // if we're at the limit, we no longer need to process
